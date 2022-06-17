@@ -1,0 +1,192 @@
+---
+title: "Nguyen_Tyler_Final_Exam"
+author: "Stats 20 Spring 2022"
+date: "6/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+load("final_data.RData")
+load("Store.RData")
+data <- merge(yr2016, yr2018, all = TRUE)
+data2 <- merge(data, yr2020, all = TRUE)
+finalIowa <- merge(data2, store, by.x = "Store Number")
+```
+Firstly, I have to load the data into environment and merge data sets together
+
+# 1
+
+## A
+```{r}
+nrow(finalIowa)
+ncol(finalIowa)
+
+```
+The data set has 11882 rows and 16 columns. The name of the columns are:
+```{r}
+names(finalIowa)
+```
+
+Now, I look at what type of variables I am working with.
+
+```{r}
+sapply(finalIowa, class) |> table()
+```
+
+I know by the names of the variables that I need to convert some of these character variables to numeric.
+I look at the first few rows of data to know which ones to convert
+```{r}
+head(finalIowa)
+```
+
+From this, I know to convert the columns: "State Bottle Retail", "Bottles Sold", "Sale (Dollars)", "Volume Sold(Liters)", and "Volume Sold (Gallons)". 
+```{r}
+finalIowa$`State Bottle Retail` <- gsub("\\$|,", "", finalIowa$`State Bottle Retail`)
+finalIowa$`Sale (Dollars)` <- gsub("\\$|,", "", finalIowa$`Sale (Dollars)`)
+finalIowa[7:11] <- sapply(finalIowa[7:11], as.numeric)
+```
+Now we can see what we are working with:
+```{r}
+numeric <- unlist(lapply(finalIowa, is.numeric), use.names = FALSE)
+char <- unlist(lapply(finalIowa, is.character), use.names = FALSE)
+summary(finalIowa[numeric])
+sapply(names(finalIowa)[char], function(x) table(finalIowa[x], useNA = "always", dnn = x) |> sort() |> tail())
+```
+
+Time to assess missing values
+```{r}
+sapply(names(finalIowa), function(ix) round(prop.table(table(is.na(finalIowa[ix]), dnn = ix)), digit = 5))
+```
+We see that there are barely any missing values so we are good to start analyzing the data and make the desired table  
+```{r}
+finalIowa$Year <- format(finalIowa$Date, format = "%Y") 
+finalIowa$Month <- format(finalIowa$Date, format = "%m")
+tapply(finalIowa$`Sale (Dollars)`, finalIowa$Year, FUN = sum)
+```
+I created a new variable "Year" to easily analyze the three years we want.
+
+## B 
+
+### 1 
+```{r}
+head(sort(table(finalIowa$`Zip Code`[which(finalIowa$Year == 2016)]), decreasing = TRUE), n = 10)
+```
+Year 2016
+
+```{r}
+head(sort(table(finalIowa$`Zip Code`[which(finalIowa$Year == 2018)]), decreasing = TRUE), n = 10)
+```
+Year 2018
+```{r}
+head(sort(table(finalIowa$`Zip Code`[which(finalIowa$Year == 2020)]), decreasing = TRUE), n = 10)
+```
+Year 2020
+
+### 2 
+```{r}
+zipcodeSale2016 <- tapply(finalIowa$`Sale (Dollars)`[which(finalIowa$Year == 2016)], finalIowa$`Zip Code`[which(finalIowa$Year == 2016)] , FUN = sum)
+head(sort(zipcodeSale2016, decreasing = TRUE), n=10)
+```
+2016
+```{r}
+zipcodeSale2018 <- tapply(finalIowa$`Sale (Dollars)`[which(finalIowa$Year == 2018)], finalIowa$`Zip Code`[which(finalIowa$Year == 2018)] , FUN = sum)
+head(sort(zipcodeSale2018, decreasing = TRUE), n=10)
+```
+2018
+```{r}
+zipcodeSale2020 <- tapply(finalIowa$`Sale (Dollars)`[which(finalIowa$Year == 2020)], finalIowa$`Zip Code`[which(finalIowa$Year == 2020)] , FUN = sum)
+head(sort(zipcodeSale2020, decreasing = TRUE), n=10)
+```
+2020
+
+### 3
+```{r}
+medianSale2016 <- tapply(finalIowa$`Sale (Dollars)`[which(finalIowa$Year == 2016)], finalIowa$`Zip Code`[which(finalIowa$Year == 2016)] , FUN = median)
+head(sort(medianSale2016, decreasing = TRUE), n=10)
+```
+2016
+```{r}
+medianSale2018 <- tapply(finalIowa$`Sale (Dollars)`[which(finalIowa$Year == 2018)], finalIowa$`Zip Code`[which(finalIowa$Year == 2018)] , FUN = median)
+head(sort(medianSale2018, decreasing = TRUE), n=10)
+
+```
+2018
+```{r}
+medianSale2020 <- tapply(finalIowa$`Sale (Dollars)`[which(finalIowa$Year == 2020)], finalIowa$`Zip Code`[which(finalIowa$Year == 2020)] , FUN = median)
+head(sort(medianSale2020, decreasing = TRUE), n=10)
+
+```
+2020
+
+## C 
+```{r}
+tapply(finalIowa$`State Bottle Retail`, finalIowa$Year, FUN = median)
+tapply(finalIowa$`State Bottle Retail`, finalIowa$Year, FUN = mean)
+
+```
+It appears that over the years, the price of alcohol has increased. We can see this from the code above when I calculated the mean and median prices by year. The reason for this is probably due to inflation, but also COVID. This is because we see a larger jump from 2018 to 2020 than from 2016 to 2018, meaning that COVID affected the economy. This may because it was harder to export alcohol as a result of COVID 19 restrictions on trade. 
+
+## D 
+I believe that the most influential vendors means the most volume sold. As I result, I will analyze the most amount of alcohol sold in liters by retailer. 
+```{r}
+head(sort(tapply(finalIowa$`Volume Sold (Gallons)`, finalIowa$`Store Name`, FUN = sum), decreasing = TRUE), n= 10)
+```
+Hy-Vee appears to be the retailer who is most influential as they have the most alcohol sold by volume.
+
+## E 
+I have used the apply functions in part B, C, and D of problem 1. Also in problem 2 and problem 3.
+
+# 2
+
+```{r}
+set.seed(105764460)
+
+index <- sample(nrow(finalIowa), 750)
+
+sampleData <- finalIowa[index,]
+
+sampleVolumebyYear <- tapply(sampleData$`Volume Sold (Liters)`, sampleData$Year, median)
+sampleBottlesbyYear <- tapply(sampleData$`Bottles Sold`, sampleData$Year, median)
+samplePricebyYear <- tapply(sampleData$`Sale (Dollars)`, sampleData$Year, median)
+sampleRetailbyYear <- tapply(sampleData$`State Bottle Retail`, sampleData$Year, median)
+
+barplot(table(sampleData$Year), col = colors(), xlab = "Year", ylab = "Observations", main = "Observations over Year in sample data set")
+
+```
+
+```{r}
+
+barplot(samplePricebyYear, xlab = "Year", ylab = "Median Total Sale in dollars", col = c("red", "blue", "yellow"), main = "Median Total Sale in Dollars over Year")
+
+barplot(sampleRetailbyYear, xlab = "Year", ylab = "Median Retail Sale in dollars", col = c("red", "blue", "yellow"), main = "Median Retail Sale in Dollars over Year")
+```
+
+# 3
+
+I would outline the effect of COVID-19 on alcohol sales by computing the median price of sales by Year. The reason I would do this is to see the effect which COVID-19 had on the alcohol prices. And as we could see from question 2 and its bar plots, it is safe to say that COVID 19 did affect the price of alcohol as we can see a sharp increase in the median total sales and the median retail price of alcohol. For instance, the median total price increased from 68.04 dollars to 83.19 dollars, a drastic increase when compared to the increase of 64.44 dollars to 68.04 dollars from 2016-2018.
+```{r}
+samplePricebyYear <- tapply(sampleData$`Sale (Dollars)`, sampleData$Year, median)
+samplePricebyYear
+```
+
+
+I used median to nullify the effect of outliers, and the reason COVID 19 affected the price is because it may have been harder to export alcohol from other countries as a result of COVID 19 restrictions. 
+
+In addition, I will attempt to find the effect that COVID 19 had on the amount of alcohol sold. To illustrate the point that the amount of volume sold is effected by COVID 19, I will construct two barplots by month. The reason why I do this is to find the effect which the national emergency, implemented in March, had on the amount of alcohol sold. One barplot is of 2020 and the other is of 2016&2018 combined. 
+```{r}
+sampledata2020 <- sampleData[which(sampleData$Year ==2020),]
+volumebyMonth2020 <- tapply(sampledata2020$`Volume Sold (Liters)`, sampledata2020$Month, sum)
+barplot(volumebyMonth2020, col = colors(), xlab = "Month", ylab = "Total volume sold by Liter", main = "Alcohol sold in liters per month in 2020")
+```
+
+```{r}
+sampledata20162018 <- sampleData[which(sampleData$Year ==2016 | sampleData$Year ==2018),]
+volumebyMonth20162018 <- tapply(sampledata20162018$`Volume Sold (Liters)`, sampledata20162018$Month, sum)
+barplot(table(sampledata20162018$Month), col = colors(), xlab = "Month", ylab = "Total volume sold by Liter", main = "Alcohol sold in liters per month in 2016 and 2018")
+```
+
+As we can see from the data, the national emergency did in fact have an effect on the amount of alcohol sold. This is because in March 2020, the month of the declared national emergency, we see a huge spike in the amount of alcohol sold. To be sure that this is not just a coincidence, I plotted amount of alcohol sold by month in the years 206 and 2018 combined, and we can see that in March, there is no spike in the amount of alcohol sold, showing that COVID 19 did have an affect the amount of alcohol sold.  
